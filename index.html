@@ -9,25 +9,17 @@
 
 <div style="width:100%; max-width:420px; padding:24px; text-align:center;">
 
-  <h1 style="margin-bottom:8px;">Melatonin Melange</h1>
+  <h1>Melatonin Melange</h1>
   <p style="opacity:0.7;">$100 USD</p>
 
-  <div style="margin-top:24px;">
-    <input id="price" type="number" placeholder="Enter token price in USD"
-      style="width:100%; padding:16px; border-radius:12px; border:none; font-size:16px; text-align:center;">
-  </div>
+  <p id="status">Fetching token price...</p>
 
-  <button onclick="pay()"
-    style="margin-top:16px; width:100%; padding:16px; border:none; border-radius:12px; background:#7c3cff; color:white; font-size:16px;">
-    Generate Payment
-  </button>
+  <div id="payment" style="display:none;">
 
-  <div id="result" style="display:none; margin-top:24px;">
-
-    <p>Send:</p>
     <h2 id="amount"></h2>
 
-    <a id="paylink" style="display:block; margin-top:12px; padding:14px; background:#22c55e; border-radius:12px; color:black; text-decoration:none;">
+    <a id="paylink"
+      style="display:block; margin-top:12px; padding:14px; background:#22c55e; border-radius:12px; color:black; text-decoration:none;">
       Open Wallet
     </a>
 
@@ -44,29 +36,51 @@ const RECEIVING_WALLET = "H115kTVj5QsT58w6Xg9hviyoALWqVZ1DLTvhVDeQ66w4";
 const TOKEN_MINT = "QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug";
 const USD_PRICE = 100;
 
-function pay() {
-  const price = parseFloat(document.getElementById("price").value);
+// 🔥 Fetch price from DexScreener
+async function fetchPrice() {
+  try {
+    const res = await fetch("https://api.dexscreener.com/latest/dex/tokens/" + TOKEN_MINT);
+    const data = await res.json();
 
-  if (!price) {
-    alert("Enter token price");
-    return;
+    if (!data.pairs || data.pairs.length === 0) {
+      document.getElementById("status").innerText = "No price found (token not listed?)";
+      return;
+    }
+
+    const price = parseFloat(data.pairs[0].priceUsd);
+
+    if (!price || price <= 0) {
+      document.getElementById("status").innerText = "Invalid price data";
+      return;
+    }
+
+    const amount = (USD_PRICE / price).toFixed(6);
+
+    const url = "solana:" + RECEIVING_WALLET +
+      "?amount=" + amount +
+      "&spl-token=" + TOKEN_MINT +
+      "&label=Melatonin Melange";
+
+    document.getElementById("status").innerText =
+      "Token price: $" + price.toFixed(6);
+
+    document.getElementById("amount").innerText =
+      amount + " tokens";
+
+    document.getElementById("paylink").href = url;
+
+    document.getElementById("qr").src =
+      "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=" +
+      encodeURIComponent(url);
+
+    document.getElementById("payment").style.display = "block";
+
+  } catch (e) {
+    document.getElementById("status").innerText = "Error fetching price";
   }
-
-  const amount = (USD_PRICE / price).toFixed(6);
-
-  const url = "solana:" + RECEIVING_WALLET +
-    "?amount=" + amount +
-    "&spl-token=" + TOKEN_MINT +
-    "&label=Melatonin Melange";
-
-  document.getElementById("amount").innerText = amount + " tokens";
-  document.getElementById("paylink").href = url;
-
-  document.getElementById("qr").src =
-    "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=" + encodeURIComponent(url);
-
-  document.getElementById("result").style.display = "block";
 }
+
+fetchPrice();
 </script>
 
 </body>
