@@ -1,86 +1,87 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Melatonin Melange</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Melatonin Melange</title>
 </head>
 
-<body style="margin:0; font-family:system-ui; background:#0b1020; color:white; display:flex; align-items:center; justify-content:center; min-height:100vh;">
+<body style="background:#0b1020;color:white;font-family:sans-serif;padding:20px;">
 
-<div style="width:100%; max-width:420px; padding:24px; text-align:center;">
+<h1>Melatonin Melange</h1>
 
-  <h1>Melatonin Melange</h1>
-  <p style="opacity:0.7;">$100 USD</p>
+<a href="https://pump.science/experiments/MELATONIN?mint=QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug&exp=98ba4e07-5acb-4f70-ac14-d01919f22085&mode=trading" target="_blank">
+View Experimental Data
+</a>
 
-  <p id="status">Fetching token price...</p>
+<h3>Select Package</h3>
 
-  <div id="payment" style="display:none;">
+<button onclick="selectPackage('one')">1 Lunar Cycle ($100)</button>
+<button onclick="selectPackage('two')">2 Lunar Cycles ($200)</button>
 
-    <h2 id="amount"></h2>
+<div id="form" style="display:none;margin-top:20px;">
+  <h3>Shipping (US only)</h3>
+  <input id="name" placeholder="Full Name"><br>
+  <input id="address" placeholder="Address"><br>
+  <input id="city" placeholder="City"><br>
+  <input id="state" placeholder="State"><br>
+  <input id="zip" placeholder="ZIP"><br>
 
-    <a id="paylink"
-      style="display:block; margin-top:12px; padding:14px; background:#22c55e; border-radius:12px; color:black; text-decoration:none;">
-      Open Wallet
-    </a>
+  <button onclick="createOrder()">Continue to Payment</button>
+</div>
 
-    <div style="margin-top:20px; background:white; padding:12px; border-radius:12px;">
-      <img id="qr" style="width:100%;">
-    </div>
-
-  </div>
-
+<div id="payment" style="display:none;">
+  <h3 id="amount"></h3>
+  <a id="paylink">Open Wallet</a>
+  <img id="qr" style="width:250px;">
+  <p id="status">Waiting for payment...</p>
 </div>
 
 <script>
-const RECEIVING_WALLET = "H115kTVj5QsT58w6Xg9hviyoALWqVZ1DLTvhVDeQ66w4";
-const TOKEN_MINT = "QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug";
-const USD_PRICE = 100;
+let selectedPackage;
 
-// 🔥 Fetch price from DexScreener
-async function fetchPrice() {
-  try {
-    const res = await fetch("https://api.dexscreener.com/latest/dex/tokens/" + TOKEN_MINT);
-    const data = await res.json();
-
-    if (!data.pairs || data.pairs.length === 0) {
-      document.getElementById("status").innerText = "No price found (token not listed?)";
-      return;
-    }
-
-    const price = parseFloat(data.pairs[0].priceUsd);
-
-    if (!price || price <= 0) {
-      document.getElementById("status").innerText = "Invalid price data";
-      return;
-    }
-
-    const amount = (USD_PRICE / price).toFixed(6);
-
-    const url = "solana:" + RECEIVING_WALLET +
-      "?amount=" + amount +
-      "&spl-token=" + TOKEN_MINT +
-      "&label=Melatonin Melange";
-
-    document.getElementById("status").innerText =
-      "Token price: $" + price.toFixed(6);
-
-    document.getElementById("amount").innerText =
-      amount + " tokens";
-
-    document.getElementById("paylink").href = url;
-
-    document.getElementById("qr").src =
-      "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=" +
-      encodeURIComponent(url);
-
-    document.getElementById("payment").style.display = "block";
-
-  } catch (e) {
-    document.getElementById("status").innerText = "Error fetching price";
-  }
+function selectPackage(p) {
+  selectedPackage = p;
+  document.getElementById("form").style.display = "block";
 }
 
-fetchPrice();
+async function createOrder() {
+  const res = await fetch("/api/create-order", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      packageType: selectedPackage,
+      address: {
+        name: document.getElementById("name").value
+      }
+    })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("amount").innerText =
+    data.tokenAmount + " tokens";
+
+  document.getElementById("paylink").href = data.payUrl;
+
+  document.getElementById("qr").src =
+    "https://api.qrserver.com/v1/create-qr-code/?data=" +
+    encodeURIComponent(data.payUrl);
+
+  document.getElementById("payment").style.display = "block";
+
+  checkPayment(data.reference);
+}
+
+async function checkPayment(ref) {
+  setInterval(async () => {
+    const r = await fetch("/api/check-payment?reference=" + ref);
+    const d = await r.json();
+
+    if (d.paid) {
+      document.getElementById("status").innerText = "Payment confirmed!";
+    }
+  }, 5000);
+}
 </script>
 
 </body>
