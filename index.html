@@ -74,7 +74,7 @@ async function createOrder() {
 
 async function checkPayment(ref) {
   setInterval(async () => {
-    const r = await fetch("/api/check-payment?reference=" + ref);
+    const r = await fetch("https://txaidunu-github-io.vercel.app/api/check-payment?reference=" + ref);
     const d = await r.json();
 
     if (d.paid) {
