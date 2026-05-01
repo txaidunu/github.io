@@ -1,62 +1,41 @@
-import { Keypair } from "@solana/web3.js";
+async function createOrder() {
+  try {
+    document.getElementById("status").innerText = "Creating order...";
 
-export default async function handler(req, res) {
-  const { packageType, address } = req.body;
+    const res = await fetch("https://txaidunu-github-io.vercel.app/api/create-order", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        packageType: selectedPackage,
+        address: {
+          name: document.getElementById("name").value,
+          address: document.getElementById("address").value,
+          city: document.getElementById("city").value,
+          state: document.getElementById("state").value,
+          zip: document.getElementById("zip").value
+        }
+      })
+    });
 
-  const prices = {
-    one: 100,
-    two: 200
-  };
+    const data = await res.json();
 
-  const usdPrice = prices[packageType];
-  if (!usdPrice) {
-    return res.status(400).json({ error: "Invalid package" });
+    if (!res.ok) {
+      alert("Order error: " + JSON.stringify(data));
+      return;
+    }
+
+    document.getElementById("amount").innerText = data.tokenAmount + " tokens";
+    document.getElementById("paylink").href = data.payUrl;
+
+    document.getElementById("qr").src =
+      "https://api.qrserver.com/v1/create-qr-code/?data=" +
+      encodeURIComponent(data.payUrl);
+
+    document.getElementById("payment").style.display = "block";
+
+    checkPayment(data.reference);
+
+  } catch (err) {
+    alert("Checkout error: " + err.message);
   }
-
-  const reference = Keypair.generate().publicKey.toBase58();
-
-  const r = await fetch("https://api.dexscreener.com/latest/dex/tokens/QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug");
-  const data = await r.json();
-  const price = parseFloat(data.pairs?.[0]?.priceUsd || 0);
-
-  if (!price) {
-    return res.status(500).json({ error: "Price unavailable" });
-  }
-
-  const tokenAmount = (usdPrice / price).toFixed(6);
-  const orderId = crypto.randomUUID();
-
-  await fetch(process.env.SUPABASE_URL + "/rest/v1/orders", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": process.env.SUPABASE_KEY,
-      "Authorization": "Bearer " + process.env.SUPABASE_KEY
-    },
-    body: JSON.stringify({
-      id: orderId,
-      package_type: packageType,
-      usd_price: usdPrice,
-      token_amount: tokenAmount,
-      name: address.name,
-      address: address.address,
-      city: address.city,
-      state: address.state,
-      zip: address.zip,
-      reference: reference,
-      status: "PENDING"
-    })
-  });
-
-  const payUrl =
-    "solana:H115kTVj5QsT58w6Xg9hviyoALWqVZ1DLTvhVDeQ66w4" +
-    "?amount=" + tokenAmount +
-    "&spl-token=QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug" +
-    "&reference=" + reference;
-
-  return res.json({
-    reference,
-    tokenAmount,
-    payUrl
-  });
 }
