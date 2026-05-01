@@ -29,56 +29,94 @@ View Experimental Data
   <button onclick="createOrder()">Continue to Payment</button>
 </div>
 
+<p id="debug" style="margin-top:20px;color:#facc15;"></p>
+
 <div id="payment" style="display:none;">
   <h3 id="amount"></h3>
-  <a id="paylink">Open Wallet</a>
-  <img id="qr" style="width:250px;">
+  <a id="paylink" target="_blank">Open Wallet</a><br><br>
+  <img id="qr" style="width:250px;background:white;padding:10px;">
   <p id="status">Waiting for payment...</p>
 </div>
 
 <script>
-let selectedPackage;
+let selectedPackage = null;
 
 function selectPackage(p) {
   selectedPackage = p;
   document.getElementById("form").style.display = "block";
+  document.getElementById("debug").innerText = "Selected package: " + p;
 }
 
 async function createOrder() {
-  const res = await fetch("/api/create-order", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      packageType: selectedPackage,
-      address: {
-        name: document.getElementById("name").value
-      }
-    })
-  });
+  const debug = document.getElementById("debug");
 
-  const data = await res.json();
+  try {
+    debug.innerText = "Creating order...";
 
-  document.getElementById("amount").innerText =
-    data.tokenAmount + " tokens";
+    if (!selectedPackage) {
+      debug.innerText = "Error: choose a package first.";
+      return;
+    }
 
-  document.getElementById("paylink").href = data.payUrl;
+    const res = await fetch("https://txaidunu-github-io.vercel.app/api/create-order", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        packageType: selectedPackage,
+        address: {
+          name: document.getElementById("name").value,
+          address: document.getElementById("address").value,
+          city: document.getElementById("city").value,
+          state: document.getElementById("state").value,
+          zip: document.getElementById("zip").value
+        }
+      })
+    });
 
-  document.getElementById("qr").src =
-    "https://api.qrserver.com/v1/create-qr-code/?data=" +
-    encodeURIComponent(data.payUrl);
+    const text = await res.text();
+    let data;
 
-  document.getElementById("payment").style.display = "block";
+    try {
+      data = JSON.parse(text);
+    } catch {
+      debug.innerText = "Server returned non-JSON: " + text;
+      return;
+    }
 
-  checkPayment(data.reference);
+    if (!res.ok) {
+      debug.innerText = "Order error: " + JSON.stringify(data);
+      return;
+    }
+
+    debug.innerText = "Order created. Waiting for payment...";
+
+    document.getElementById("amount").innerText = data.tokenAmount + " tokens";
+    document.getElementById("paylink").href = data.payUrl;
+
+    document.getElementById("qr").src =
+      "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=" +
+      encodeURIComponent(data.payUrl);
+
+    document.getElementById("payment").style.display = "block";
+
+    checkPayment(data.reference);
+
+  } catch (err) {
+    debug.innerText = "Checkout error: " + err.message;
+  }
 }
 
-async function checkPayment(ref) {
+function checkPayment(ref) {
   setInterval(async () => {
-    const r = await fetch("https://txaidunu-github-io.vercel.app/api/check-payment?reference=" + ref);
-    const d = await r.json();
+    try {
+      const r = await fetch("https://txaidunu-github-io.vercel.app/api/check-payment?reference=" + ref);
+      const d = await r.json();
 
-    if (d.paid) {
-      document.getElementById("status").innerText = "Payment confirmed!";
+      if (d.paid) {
+        document.getElementById("status").innerText = "Payment confirmed!";
+      }
+    } catch (err) {
+      document.getElementById("status").innerText = "Payment check error: " + err.message;
     }
   }, 5000);
 }
