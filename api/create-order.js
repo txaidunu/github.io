@@ -1,41 +1,92 @@
-async function createOrder() {
+import { Keypair } from "@solana/web3.js";
+
+export default async function handler(req, res) {
   try {
-    document.getElementById("status").innerText = "Creating order...";
-
-    const res = await fetch("https://txaidunu-github-io.vercel.app/api/create-order", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        packageType: selectedPackage,
-        address: {
-          name: document.getElementById("name").value,
-          address: document.getElementById("address").value,
-          city: document.getElementById("city").value,
-          state: document.getElementById("state").value,
-          zip: document.getElementById("zip").value
-        }
-      })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert("Order error: " + JSON.stringify(data));
-      return;
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
     }
 
-    document.getElementById("amount").innerText = data.tokenAmount + " tokens";
-    document.getElementById("paylink").href = data.payUrl;
+    const { packageType, address } = req.body || {};
 
-    document.getElementById("qr").src =
-      "https://api.qrserver.com/v1/create-qr-code/?data=" +
-      encodeURIComponent(data.payUrl);
+    const prices = {
+      one: 100,
+      two: 200
+    };
 
-    document.getElementById("payment").style.display = "block";
+    const usdPrice = prices[packageType];
 
-    checkPayment(data.reference);
+    if (!usdPrice) {
+      return res.status(400).json({ error: "Invalid package" });
+    }
 
-  } catch (err) {
-    alert("Checkout error: " + err.message);
+    const reference = Keypair.generate().publicKey.toBase58();
+
+    const priceResponse = await fetch(
+      "https://api.dexscreener.com/latest/dex/tokens/QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug"
+    );
+
+    const priceData = await priceResponse.json();
+    const tokenUsdPrice = parseFloat(priceData.pairs?.[0]?.priceUsd || 0);
+
+    if (!tokenUsdPrice) {
+      return res.status(500).json({ error: "Price unavailable" });
+    }
+
+    const tokenAmount = (usdPrice / tokenUsdPrice).toFixed(6);
+    const orderId = crypto.randomUUID();
+
+    const supabaseRes = await fetch(
+      process.env.SUPABASE_URL + "/rest/v1/orders",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: process.env.SUPABASE_KEY,
+          Authorization: "Bearer " + process.env.SUPABASE_KEY
+        },
+        body: JSON.stringify({
+          id: orderId,
+          package_type: packageType,
+          usd_price: usdPrice,
+          token_amount: tokenAmount,
+          name: address?.name || "",
+          address: address?.address || "",
+          city: address?.city || "",
+          state: address?.state || "",
+          zip: address?.zip || "",
+          reference: reference,
+          status: "PENDING"
+        })
+      }
+    );
+
+    if (!supabaseRes.ok) {
+      const details = await supabaseRes.text();
+      return res.status(500).json({
+        error: "Supabase insert failed",
+        details
+      });
+    }
+
+    const payUrl =
+      "solana:H115kTVj5QsT58w6Xg9hviyoALWqVZ1DLTvhVDeQ66w4" +
+      "?amount=" + encodeURIComponent(tokenAmount) +
+      "&spl-token=" + encodeURIComponent("QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug") +
+      "&reference=" + encodeURIComponent(reference) +
+      "&label=" + encodeURIComponent("Melatonin Melange") +
+      "&message=" + encodeURIComponent("Melatonin Melange order");
+
+    return res.status(200).json({
+      orderId,
+      reference,
+      tokenAmount,
+      payUrl
+    });
+
+  } catch (e) {
+    return res.status(500).json({
+      error: "Server error",
+      details: e.message
+    });
   }
 }
