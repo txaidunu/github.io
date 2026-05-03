@@ -1,174 +1,97 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Melatonin Melange</title>
-</head>
+import { Keypair } from "@solana/web3.js";
 
-<body style="background:#0b1020;color:white;font-family:sans-serif;padding:20px;max-width:520px;margin:auto;">
-
-<h1>Melatonin Melange</h1>
-
-<p style="opacity:0.75;">
-Experimental checkout. US domestic shipping only.
-</p>
-
-<a href="https://pump.science/experiments/MELATONIN?mint=QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug&exp=98ba4e07-5acb-4f70-ac14-d01919f22085&mode=trading" target="_blank" style="color:#93c5fd;">
-View Experimental Data
-</a>
-
-<h3>Select Package</h3>
-
-<button onclick="selectPackage('one')" style="width:100%;padding:14px;margin:6px 0;border-radius:10px;">
-1 Lunar Cycle ($100)
-</button>
-
-<button onclick="selectPackage('two')" style="width:100%;padding:14px;margin:6px 0;border-radius:10px;">
-2 Lunar Cycles ($200)
-</button>
-
-<div id="form" style="display:none;margin-top:20px;">
-  <h3>Shipping (US only)</h3>
-
-  <input id="name" placeholder="Full Name" style="width:100%;padding:12px;margin:5px 0;"><br>
-  <input id="address" placeholder="Street Address" style="width:100%;padding:12px;margin:5px 0;"><br>
-  <input id="city" placeholder="City" style="width:100%;padding:12px;margin:5px 0;"><br>
-  <input id="state" placeholder="State" maxlength="2" style="width:100%;padding:12px;margin:5px 0;"><br>
-  <input id="zip" placeholder="ZIP" style="width:100%;padding:12px;margin:5px 0;"><br>
-
-  <button onclick="createOrder()" style="width:100%;padding:16px;margin-top:12px;border-radius:10px;background:#7c3cff;color:white;border:none;font-weight:bold;">
-    Continue to Payment
-  </button>
-</div>
-
-<p id="debug" style="margin-top:20px;color:#facc15;white-space:pre-wrap;"></p>
-
-<div id="payment" style="display:none;">
-  <h3 id="amount"></h3>
-
-  <a id="paylink" target="_blank" style="display:block;background:#22c55e;color:black;padding:14px;border-radius:10px;text-align:center;text-decoration:none;font-weight:bold;">
-    Open Wallet
-  </a>
-
-  <br>
-
-  <img id="qr" style="width:250px;background:white;padding:10px;border-radius:10px;">
-
-  <p id="status">Waiting for payment...</p>
-</div>
-
-<script>
-let selectedPackage = null;
-
-const API_BASE = "https://txaidunu-github-io.vercel.app";
-
-function selectPackage(p) {
-  selectedPackage = p;
-  document.getElementById("form").style.display = "block";
-  document.getElementById("debug").innerText = "Selected package: " + p;
-}
-
-function validUSShipping() {
-  const state = document.getElementById("state").value.trim().toUpperCase();
-  const zip = document.getElementById("zip").value.trim();
-
-  if (!document.getElementById("name").value.trim()) return "Enter full name.";
-  if (!document.getElementById("address").value.trim()) return "Enter street address.";
-  if (!document.getElementById("city").value.trim()) return "Enter city.";
-  if (!/^[A-Z]{2}$/.test(state)) return "Enter 2-letter US state code.";
-  if (!/^\d{5}(-\d{4})?$/.test(zip)) return "Enter valid US ZIP code.";
-
-  document.getElementById("state").value = state;
-  return null;
-}
-
-async function createOrder() {
-  const debug = document.getElementById("debug");
-
+export default async function handler(req, res) {
   try {
-    debug.innerText = "Creating order...";
-
-    if (!selectedPackage) {
-      debug.innerText = "Error: choose a package first.";
-      return;
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const shippingError = validUSShipping();
-    if (shippingError) {
-      debug.innerText = "Shipping error: " + shippingError;
-      return;
+    const { packageType, address } = req.body || {};
+
+    const prices = {
+      one: 100,
+      two: 200
+    };
+
+    const usdPrice = prices[packageType];
+
+    if (!usdPrice) {
+      return res.status(400).json({ error: "Invalid package" });
     }
 
-    const res = await fetch(API_BASE + "/api/create-order", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        packageType: selectedPackage,
-        address: {
-          name: document.getElementById("name").value.trim(),
-          address: document.getElementById("address").value.trim(),
-          city: document.getElementById("city").value.trim(),
-          state: document.getElementById("state").value.trim().toUpperCase(),
-          zip: document.getElementById("zip").value.trim()
-        }
-      })
+    const reference = Keypair.generate().publicKey.toBase58();
+
+    const priceResponse = await fetch(
+      "https://api.dexscreener.com/latest/dex/tokens/QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug"
+    );
+
+    const priceData = await priceResponse.json();
+    const tokenUsdPrice = parseFloat(priceData.pairs?.[0]?.priceUsd || 0);
+
+    if (!tokenUsdPrice) {
+      return res.status(500).json({ error: "Price unavailable" });
+    }
+
+    const tokenAmount = (usdPrice / tokenUsdPrice).toFixed(6);
+    const orderId = crypto.randomUUID();
+
+    const supabaseRes = await fetch(
+      process.env.SUPABASE_URL + "/rest/v1/orders",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": process.env.SUPABASE_KEY,
+          "Authorization": "Bearer " + process.env.SUPABASE_KEY
+        },
+        body: JSON.stringify({
+          id: orderId,
+          package_type: packageType,
+          usd_price: usdPrice,
+          token_amount: tokenAmount,
+          name: address?.name || "",
+          address: address?.address || "",
+          city: address?.city || "",
+          state: address?.state || "",
+          zip: address?.zip || "",
+          reference: reference,
+          status: "PENDING"
+        })
+      }
+    );
+
+    if (!supabaseRes.ok) {
+      const details = await supabaseRes.text();
+
+      return res.status(500).json({
+        error: "Supabase insert failed",
+        supabaseOk: supabaseRes.ok,
+        supabaseStatus: supabaseRes.status,
+        details
+      });
+    }
+
+    const payUrl =
+      "solana:H115kTVj5QsT58w6Xg9hviyoALWqVZ1DLTvhVDeQ66w4" +
+      "?amount=" + encodeURIComponent(tokenAmount) +
+      "&spl-token=" + encodeURIComponent("QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug") +
+      "&reference=" + encodeURIComponent(reference) +
+      "&label=" + encodeURIComponent("Melatonin Melange") +
+      "&message=" + encodeURIComponent("Melatonin Melange order");
+
+    return res.status(200).json({
+      orderId,
+      reference,
+      tokenAmount,
+      payUrl,
+      supabaseOk: supabaseRes.ok,
+      supabaseStatus: supabaseRes.status
     });
 
-    const text = await res.text();
-    let data;
-
-    try {
-      data = JSON.parse(text);
-    } catch {
-      debug.innerText = "Server returned non-JSON:\n" + text;
-      return;
-    }
-
-    if (!res.ok) {
-      debug.innerText = "Order error:\n" + JSON.stringify(data, null, 2);
-      return;
-    }
-
-    debug.innerText =
-      "Order created.\n" +
-      "Supabase OK: " + data.supabaseOk + "\n" +
-      "Supabase Status: " + data.supabaseStatus + "\n" +
-      "Order ID: " + data.orderId + "\n" +
-      "Reference: " + data.reference;
-
-    document.getElementById("amount").innerText = data.tokenAmount + " tokens";
-    document.getElementById("paylink").href = data.payUrl;
-
-    document.getElementById("qr").src =
-      "https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=" +
-      encodeURIComponent(data.payUrl);
-
-    document.getElementById("payment").style.display = "block";
-
-    checkPayment(data.reference);
-
-  } catch (err) {
-    debug.innerText = "Checkout error: " + err.message;
+  } catch (e) {
+    return res.status(500).json({
+      error: "Server error",
+      details: e.message
+    });
   }
 }
-
-function checkPayment(ref) {
-  setInterval(async () => {
-    try {
-      const r = await fetch(API_BASE + "/api/check-payment?reference=" + encodeURIComponent(ref));
-      const d = await r.json();
-
-      if (d.paid) {
-        document.getElementById("status").innerText =
-          "Payment confirmed! Signature: " + d.signature;
-      }
-    } catch (err) {
-      document.getElementById("status").innerText =
-        "Payment check error: " + err.message;
-    }
-  }, 5000);
-}
-</script>
-
-</body>
-</html>
