@@ -84,7 +84,7 @@ export default async function handler(req, res) {
     });
 
   } catch (e) {
-    return res.status(200).json({
+    return res.status(405).json({ error: "Method not allowed - NEW VERSION" });
   orderId,
   reference,
   tokenAmount,
