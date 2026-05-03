@@ -5,32 +5,87 @@
 <title>Melatonin Mélange</title>
 
 <style>
+  * {
+    box-sizing: border-box;
+  }
+
   body {
     margin: 0;
     min-height: 100vh;
-    background:
-      radial-gradient(circle at 50% 20%, rgba(255,80,20,0.25), transparent 30%),
-      linear-gradient(180deg, #02040a 0%, #090b14 45%, #180704 100%);
     color: #dbeafe;
     font-family: Arial, sans-serif;
-    padding: 20px;
+    background:
+      linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.92)),
+      url("/product-box.png.png");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    padding: 22px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(circle at 50% 35%, rgba(56,189,248,0.2), transparent 28%),
+      radial-gradient(circle at 50% 80%, rgba(249,115,22,0.28), transparent 40%);
+    pointer-events: none;
+    animation: shimmer 7s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.55; transform: translateY(0); }
+    50% { opacity: 0.9; transform: translateY(-10px); }
   }
 
   .wrap {
-    max-width: 540px;
+    max-width: 560px;
     margin: auto;
+    position: relative;
+    z-index: 2;
   }
 
   .card {
-    border: 1px solid rgba(0, 180, 255, 0.35);
-    border-radius: 24px;
-    padding: 26px;
-    background:
-      linear-gradient(180deg, rgba(5,10,20,0.92), rgba(20,8,6,0.95)),
-      radial-gradient(circle at center, rgba(255,80,20,0.16), transparent);
+    border-radius: 28px;
+    padding: 24px;
+    background: rgba(4, 8, 18, 0.78);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(56,189,248,0.42);
     box-shadow:
-      0 0 40px rgba(0,150,255,0.18),
-      0 0 70px rgba(255,60,0,0.12);
+      0 0 45px rgba(56,189,248,0.22),
+      0 0 90px rgba(249,115,22,0.16);
+  }
+
+  .hero-box-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 18px;
+    perspective: 900px;
+  }
+
+  .hero-box {
+    width: 100%;
+    max-width: 440px;
+    border-radius: 20px;
+    filter:
+      drop-shadow(0 0 18px rgba(56,189,248,0.75))
+      drop-shadow(0 0 44px rgba(249,115,22,0.42));
+    animation: floatBox 5s ease-in-out infinite;
+    transition: transform 0.35s ease, filter 0.35s ease;
+  }
+
+  .hero-box:hover {
+    transform: rotateX(4deg) rotateY(-6deg) scale(1.03);
+    filter:
+      drop-shadow(0 0 30px rgba(56,189,248,1))
+      drop-shadow(0 0 65px rgba(249,115,22,0.7));
+  }
+
+  @keyframes floatBox {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
   }
 
   .brand {
@@ -42,15 +97,15 @@
     font-size: 42px;
     line-height: 0.95;
     color: #38bdf8;
-    text-shadow: 0 0 12px #0284c7, 0 0 28px #38bdf8;
+    text-shadow: 0 0 12px #0284c7, 0 0 30px #38bdf8;
     letter-spacing: 2px;
     font-weight: 400;
-    margin-bottom: 8px;
+    margin: 10px 0 8px;
   }
 
   .mg {
-    color: #93c5fd;
-    letter-spacing: 3px;
+    color: #bfdbfe;
+    letter-spacing: 4px;
     font-size: 14px;
   }
 
@@ -75,25 +130,24 @@
     padding: 16px;
     margin: 8px 0;
     border-radius: 16px;
-    border: 1px solid rgba(56,189,248,0.5);
-    background: rgba(2,6,23,0.85);
+    border: 1px solid rgba(56,189,248,0.55);
+    background: rgba(2,6,23,0.86);
     color: #e0f2fe;
     font-size: 16px;
     box-shadow: inset 0 0 20px rgba(56,189,248,0.08);
   }
 
   .package:hover {
-    background: rgba(12,74,110,0.45);
+    background: rgba(12,74,110,0.5);
   }
 
   input {
     width: 100%;
-    box-sizing: border-box;
     padding: 14px;
     margin: 6px 0;
     border-radius: 12px;
-    border: 1px solid rgba(147,197,253,0.35);
-    background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(147,197,253,0.38);
+    background: rgba(0,0,0,0.5);
     color: white;
     font-size: 15px;
   }
@@ -108,7 +162,7 @@
     color: #020617;
     font-weight: bold;
     font-size: 16px;
-    box-shadow: 0 0 24px rgba(56,189,248,0.45);
+    box-shadow: 0 0 26px rgba(56,189,248,0.48);
   }
 
   .wallet {
@@ -131,7 +185,7 @@
     border-radius: 18px;
     display: block;
     margin: 22px auto;
-    box-shadow: 0 0 35px rgba(56,189,248,0.35);
+    box-shadow: 0 0 38px rgba(56,189,248,0.38);
   }
 
   #debug {
@@ -144,8 +198,8 @@
     margin-top: 28px;
     font-size: 11px;
     line-height: 1.5;
-    color: rgba(219,234,254,0.65);
-    border-top: 1px solid rgba(255,255,255,0.12);
+    color: rgba(219,234,254,0.72);
+    border-top: 1px solid rgba(255,255,255,0.14);
     padding-top: 16px;
   }
 
@@ -155,6 +209,7 @@
     margin-top: 20px;
     font-size: 13px;
     letter-spacing: 1px;
+    text-shadow: 0 0 14px rgba(56,189,248,0.7);
   }
 </style>
 </head>
@@ -164,6 +219,10 @@
   <div class="card">
 
     <div class="brand">
+      <div class="hero-box-wrap">
+        <img src="/product-box.png.png" class="hero-box" alt="Melatonin Mélange product box">
+      </div>
+
       <h1>melatonin<br>mélange</h1>
       <div class="mg">500 mg</div>
       <div class="tagline">experimental suppositories</div>
