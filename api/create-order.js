@@ -84,9 +84,13 @@ export default async function handler(req, res) {
     });
 
   } catch (e) {
-    return res.status(500).json({
-      error: "Server error",
-      details: e.message
+    return res.status(200).json({
+  orderId,
+  reference,
+  tokenAmount,
+  payUrl,
+  supabaseOk: supabaseRes.ok,
+  supabaseStatus: supabaseRes.status
     });
   }
 }
