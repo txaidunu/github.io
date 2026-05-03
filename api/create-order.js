@@ -1,4 +1,34 @@
-import { Keypair } from "@solana/web3.js";
+import { randomBytes, randomUUID } from "crypto";
+
+const BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+function base58Encode(buffer) {
+  let digits = [0];
+
+  for (const byte of buffer) {
+    let carry = byte;
+    for (let j = 0; j < digits.length; j++) {
+      carry += digits[j] << 8;
+      digits[j] = carry % 58;
+      carry = Math.floor(carry / 58);
+    }
+    while (carry) {
+      digits.push(carry % 58);
+      carry = Math.floor(carry / 58);
+    }
+  }
+
+  for (const byte of buffer) {
+    if (byte === 0) digits.push(0);
+    else break;
+  }
+
+  return digits.reverse().map(d => BASE58[d]).join("");
+}
+
+function generateReference() {
+  return base58Encode(randomBytes(32));
+}
 
 export default async function handler(req, res) {
   try {
@@ -27,7 +57,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Invalid package" });
     }
 
-    const reference = Keypair.generate().publicKey.toBase58();
+    const reference = generateReference();
 
     const priceResponse = await fetch(
       "https://api.dexscreener.com/latest/dex/tokens/QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug"
@@ -41,7 +71,7 @@ export default async function handler(req, res) {
     }
 
     const tokenAmount = (usdPrice / tokenUsdPrice).toFixed(6);
-    const orderId = crypto.randomUUID();
+    const orderId = randomUUID();
 
     const supabaseRes = await fetch(process.env.SUPABASE_URL + "/rest/v1/orders", {
       method: "POST",
@@ -81,13 +111,13 @@ export default async function handler(req, res) {
       "&spl-token=" + encodeURIComponent("QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug") +
       "&reference=" + encodeURIComponent(reference) +
       "&label=" + encodeURIComponent("Melatonin Melange") +
-      "&message=" + encodeURIComponent("Melatonin Melange order");
+      "&message=" + encodeURIComponent("Order " + orderId);
 
     return res.status(200).json({
-      orderId: orderId,
-      reference: reference,
-      tokenAmount: tokenAmount,
-      payUrl: payUrl,
+      orderId,
+      reference,
+      tokenAmount,
+      payUrl,
       supabaseOk: true,
       supabaseStatus: supabaseRes.status
     });
