@@ -2,6 +2,14 @@ import { Keypair } from "@solana/web3.js";
 
 export default async function handler(req, res) {
   try {
+    if (!process.env.SUPABASE_URL) {
+      return res.status(500).json({ error: "Missing SUPABASE_URL" });
+    }
+
+    if (!process.env.SUPABASE_KEY) {
+      return res.status(500).json({ error: "Missing SUPABASE_KEY" });
+    }
+
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Method not allowed" });
     }
@@ -35,35 +43,34 @@ export default async function handler(req, res) {
     const tokenAmount = (usdPrice / tokenUsdPrice).toFixed(6);
     const orderId = crypto.randomUUID();
 
-    const supabaseRes = await fetch(
-      process.env.SUPABASE_URL + "/rest/v1/orders",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: process.env.SUPABASE_KEY,
-          Authorization: "Bearer " + process.env.SUPABASE_KEY
-        },
-        body: JSON.stringify({
-          id: orderId,
-          package_type: packageType,
-          usd_price: usdPrice,
-          token_amount: tokenAmount,
-          name: address?.name || "",
-          address: address?.address || "",
-          city: address?.city || "",
-          state: address?.state || "",
-          zip: address?.zip || "",
-          reference: reference,
-          status: "PENDING"
-        })
-      }
-    );
+    const supabaseRes = await fetch(process.env.SUPABASE_URL + "/rest/v1/orders", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": process.env.SUPABASE_KEY,
+        "Authorization": "Bearer " + process.env.SUPABASE_KEY
+      },
+      body: JSON.stringify({
+        id: orderId,
+        package_type: packageType,
+        usd_price: usdPrice,
+        token_amount: tokenAmount,
+        name: address?.name || "",
+        address: address?.address || "",
+        city: address?.city || "",
+        state: address?.state || "",
+        zip: address?.zip || "",
+        reference: reference,
+        status: "PENDING"
+      })
+    });
 
     if (!supabaseRes.ok) {
       const details = await supabaseRes.text();
       return res.status(500).json({
         error: "Supabase insert failed",
+        supabaseOk: false,
+        supabaseStatus: supabaseRes.status,
         details
       });
     }
@@ -77,20 +84,18 @@ export default async function handler(req, res) {
       "&message=" + encodeURIComponent("Melatonin Melange order");
 
     return res.status(200).json({
-      orderId,
-      reference,
-      tokenAmount,
-      payUrl
+      orderId: orderId,
+      reference: reference,
+      tokenAmount: tokenAmount,
+      payUrl: payUrl,
+      supabaseOk: true,
+      supabaseStatus: supabaseRes.status
     });
 
   } catch (e) {
-    return res.status(405).json({ error: "Method not allowed - NEW VERSION" });
-  orderId,
-  reference,
-  tokenAmount,
-  payUrl,
-  supabaseOk: supabaseRes.ok,
-  supabaseStatus: supabaseRes.status
+    return res.status(500).json({
+      error: "Server error",
+      details: e.message
     });
   }
 }
