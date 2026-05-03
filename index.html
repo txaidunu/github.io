@@ -2,55 +2,225 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Melatonin Melange</title>
+<title>Melatonin Mélange</title>
+
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 50% 20%, rgba(255,80,20,0.25), transparent 30%),
+      linear-gradient(180deg, #02040a 0%, #090b14 45%, #180704 100%);
+    color: #dbeafe;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+
+  .wrap {
+    max-width: 540px;
+    margin: auto;
+  }
+
+  .card {
+    border: 1px solid rgba(0, 180, 255, 0.35);
+    border-radius: 24px;
+    padding: 26px;
+    background:
+      linear-gradient(180deg, rgba(5,10,20,0.92), rgba(20,8,6,0.95)),
+      radial-gradient(circle at center, rgba(255,80,20,0.16), transparent);
+    box-shadow:
+      0 0 40px rgba(0,150,255,0.18),
+      0 0 70px rgba(255,60,0,0.12);
+  }
+
+  .brand {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: 42px;
+    line-height: 0.95;
+    color: #38bdf8;
+    text-shadow: 0 0 12px #0284c7, 0 0 28px #38bdf8;
+    letter-spacing: 2px;
+    font-weight: 400;
+    margin-bottom: 8px;
+  }
+
+  .mg {
+    color: #93c5fd;
+    letter-spacing: 3px;
+    font-size: 14px;
+  }
+
+  .tagline {
+    color: #fb923c;
+    font-size: 13px;
+    margin-top: 10px;
+    letter-spacing: 1px;
+  }
+
+  a {
+    color: #38bdf8;
+  }
+
+  h3 {
+    color: #bfdbfe;
+    margin-top: 24px;
+  }
+
+  .package {
+    width: 100%;
+    padding: 16px;
+    margin: 8px 0;
+    border-radius: 16px;
+    border: 1px solid rgba(56,189,248,0.5);
+    background: rgba(2,6,23,0.85);
+    color: #e0f2fe;
+    font-size: 16px;
+    box-shadow: inset 0 0 20px rgba(56,189,248,0.08);
+  }
+
+  .package:hover {
+    background: rgba(12,74,110,0.45);
+  }
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px;
+    margin: 6px 0;
+    border-radius: 12px;
+    border: 1px solid rgba(147,197,253,0.35);
+    background: rgba(0,0,0,0.45);
+    color: white;
+    font-size: 15px;
+  }
+
+  .continue {
+    width: 100%;
+    padding: 16px;
+    margin-top: 12px;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(90deg, #0284c7, #38bdf8);
+    color: #020617;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 0 24px rgba(56,189,248,0.45);
+  }
+
+  .wallet {
+    display: block;
+    background: linear-gradient(90deg, #f97316, #38bdf8);
+    color: #020617;
+    padding: 15px;
+    border-radius: 16px;
+    text-align: center;
+    text-decoration: none;
+    font-weight: bold;
+    margin-top: 16px;
+  }
+
+  #qr {
+    width: 260px;
+    max-width: 100%;
+    background: white;
+    padding: 12px;
+    border-radius: 18px;
+    display: block;
+    margin: 22px auto;
+    box-shadow: 0 0 35px rgba(56,189,248,0.35);
+  }
+
+  #debug {
+    color: #fb923c;
+    white-space: pre-wrap;
+    font-size: 14px;
+  }
+
+  .disclaimer {
+    margin-top: 28px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: rgba(219,234,254,0.65);
+    border-top: 1px solid rgba(255,255,255,0.12);
+    padding-top: 16px;
+  }
+
+  .spice {
+    text-align: center;
+    color: #38bdf8;
+    margin-top: 20px;
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+</style>
 </head>
 
-<body style="background:#0b1020;color:white;font-family:sans-serif;padding:20px;max-width:520px;margin:auto;">
+<body>
+<div class="wrap">
+  <div class="card">
 
-<h1>Melatonin Melange</h1>
+    <div class="brand">
+      <h1>melatonin<br>mélange</h1>
+      <div class="mg">500 mg</div>
+      <div class="tagline">experimental suppositories</div>
+    </div>
 
-<a href="https://pump.science/experiments/MELATONIN?mint=QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug&exp=98ba4e07-5acb-4f70-ac14-d01919f22085&mode=trading" target="_blank" style="color:#93c5fd;">
-View Experimental Data
-</a>
+    <p style="text-align:center;">
+      <a href="https://pump.science/experiments/MELATONIN?mint=QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug&exp=98ba4e07-5acb-4f70-ac14-d01919f22085&mode=trading" target="_blank">
+        View experimental data
+      </a>
+    </p>
 
-<h3>Select Package</h3>
+    <h3>Select Package</h3>
 
-<button onclick="selectPackage('one')" style="width:100%;padding:14px;margin:6px 0;">
-1 Lunar Cycle ($100)
-</button>
+    <button class="package" onclick="selectPackage('one')">
+      1 Lunar Cycle — $100
+    </button>
 
-<button onclick="selectPackage('two')" style="width:100%;padding:14px;margin:6px 0;">
-2 Lunar Cycles ($200)
-</button>
+    <button class="package" onclick="selectPackage('two')">
+      2 Lunar Cycles — $200
+    </button>
 
-<div id="form" style="display:none;margin-top:20px;">
-  <h3>Shipping (US only)</h3>
+    <div id="form" style="display:none;margin-top:20px;">
+      <h3>Shipping — US only</h3>
 
-  <input id="name" placeholder="Full Name" style="width:100%;padding:10px;margin:5px 0;"><br>
-  <input id="address" placeholder="Address" style="width:100%;padding:10px;margin:5px 0;"><br>
-  <input id="city" placeholder="City" style="width:100%;padding:10px;margin:5px 0;"><br>
-  <input id="state" placeholder="State" style="width:100%;padding:10px;margin:5px 0;"><br>
-  <input id="zip" placeholder="ZIP" style="width:100%;padding:10px;margin:5px 0;"><br>
+      <input id="name" placeholder="Full Name">
+      <input id="address" placeholder="Street Address">
+      <input id="city" placeholder="City">
+      <input id="state" placeholder="State">
+      <input id="zip" placeholder="ZIP">
 
-  <button onclick="createOrder()" style="width:100%;padding:14px;margin-top:10px;">
-    Continue to Payment
-  </button>
-</div>
+      <button class="continue" onclick="createOrder()">
+        Continue to Payment
+      </button>
+    </div>
 
-<p id="debug" style="margin-top:20px;color:#facc15;white-space:pre-wrap;"></p>
+    <p id="debug"></p>
 
-<div id="payment" style="display:none;">
-  <h3 id="amount"></h3>
+    <div id="payment" style="display:none;">
+      <h3 id="amount"></h3>
 
-  <a id="paylink" target="_blank" style="display:block;background:#22c55e;color:black;padding:12px;text-align:center;text-decoration:none;">
-    Open Wallet
-  </a>
+      <a id="paylink" target="_blank" class="wallet">
+        Open Wallet
+      </a>
 
-  <br>
+      <img id="qr">
 
-  <img id="qr" style="width:250px;background:white;padding:10px;">
+      <p id="status" style="text-align:center;">Waiting for payment...</p>
+    </div>
 
-  <p id="status">Waiting for payment...</p>
+    <div class="disclaimer">
+      Experimental product. For research/investigational use only. Not intended to diagnose,
+      treat, cure, or prevent any disease. US domestic shipping only.
+    </div>
+
+    <div class="spice">The spice extends life.</div>
+
+  </div>
 </div>
 
 <script>
@@ -60,7 +230,7 @@ const API_BASE = "https://txaidunu-github-io.vercel.app";
 function selectPackage(p) {
   selectedPackage = p;
   document.getElementById("form").style.display = "block";
-  document.getElementById("debug").innerText = "Selected package: " + p;
+  document.getElementById("debug").innerText = "Selected package: " + (p === "one" ? "1 Lunar Cycle" : "2 Lunar Cycles");
 }
 
 async function createOrder() {
@@ -127,20 +297,35 @@ async function createOrder() {
 }
 
 function checkPayment(ref) {
-  setInterval(async () => {
+  let attempts = 0;
+  const maxAttempts = 60;
+
+  const interval = setInterval(async () => {
+    attempts++;
+
     try {
-      const r = await fetch(API_BASE + "/api/check-payment?reference=" + ref);
+      const r = await fetch(API_BASE + "/api/check-payment?reference=" + encodeURIComponent(ref));
       const d = await r.json();
 
       if (d.paid) {
         document.getElementById("status").innerText =
           "Payment confirmed!";
+        clearInterval(interval);
+        return;
       }
-    } catch (err) {
+
       document.getElementById("status").innerText =
-        "Payment check error: " + err.message;
+        "Waiting for payment...";
+
+      if (attempts >= maxAttempts) {
+        clearInterval(interval);
+      }
+
+    } catch {
+      document.getElementById("status").innerText =
+        "Checking network...";
     }
-  }, 5000);
+  }, 10000);
 }
 </script>
 
