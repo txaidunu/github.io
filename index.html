@@ -5,217 +5,290 @@
 <title>Melatonin Mélange</title>
 
 <style>
-  * {
-    box-sizing: border-box;
-  }
+* { box-sizing: border-box; }
 
-  body {
-    margin: 0;
-    min-height: 100vh;
-    color: #dbeafe;
-    font-family: Arial, sans-serif;
-    background:
-      linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.92)),
-      url("/product-box.png.png");
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    padding: 22px;
-    overflow-x: hidden;
-  }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: #dbeafe;
+  font-family: Arial, sans-serif;
+  background:
+    linear-gradient(rgba(0,0,0,0.68), rgba(0,0,0,0.92)),
+    url("/product-box.png.png");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
 
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background:
-      radial-gradient(circle at 50% 35%, rgba(56,189,248,0.2), transparent 28%),
-      radial-gradient(circle at 50% 80%, rgba(249,115,22,0.28), transparent 40%);
-    pointer-events: none;
-    animation: shimmer 7s ease-in-out infinite;
-  }
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(56,189,248,0.22), transparent 28%),
+    radial-gradient(circle at 50% 80%, rgba(249,115,22,0.32), transparent 40%);
+  pointer-events: none;
+  animation: shimmer 7s ease-in-out infinite;
+  z-index: 0;
+}
 
-  @keyframes shimmer {
-    0%, 100% { opacity: 0.55; transform: translateY(0); }
-    50% { opacity: 0.9; transform: translateY(-10px); }
-  }
+@keyframes shimmer {
+  0%, 100% { opacity: 0.55; transform: translateY(0); }
+  50% { opacity: 0.95; transform: translateY(-10px); }
+}
 
-  .wrap {
-    max-width: 560px;
-    margin: auto;
-    position: relative;
-    z-index: 2;
-  }
+/* INTRO VIDEO SCREEN */
 
-  .card {
-    border-radius: 28px;
-    padding: 24px;
-    background: rgba(4, 8, 18, 0.78);
-    backdrop-filter: blur(14px);
-    border: 1px solid rgba(56,189,248,0.42);
-    box-shadow:
-      0 0 45px rgba(56,189,248,0.22),
-      0 0 90px rgba(249,115,22,0.16);
-  }
+#intro {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
 
-  .hero-box-wrap {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 18px;
-    perspective: 900px;
-  }
+#intro video {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-  .hero-box {
-    width: 100%;
-    max-width: 440px;
-    border-radius: 20px;
-    filter:
-      drop-shadow(0 0 18px rgba(56,189,248,0.75))
-      drop-shadow(0 0 44px rgba(249,115,22,0.42));
-    animation: floatBox 5s ease-in-out infinite;
-    transition: transform 0.35s ease, filter 0.35s ease;
-  }
+#intro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center, transparent 20%, rgba(0,0,0,0.45) 70%),
+    linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.7));
+}
 
-  .hero-box:hover {
-    transform: rotateX(4deg) rotateY(-6deg) scale(1.03);
-    filter:
-      drop-shadow(0 0 30px rgba(56,189,248,1))
-      drop-shadow(0 0 65px rgba(249,115,22,0.7));
-  }
+#enterBtn {
+  position: relative;
+  z-index: 2;
+  display: none;
+  padding: 18px 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(56,189,248,0.8);
+  background: linear-gradient(90deg, #0284c7, #38bdf8, #f97316);
+  color: #020617;
+  font-weight: bold;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow:
+    0 0 35px rgba(56,189,248,0.7),
+    0 0 70px rgba(249,115,22,0.35);
+  cursor: pointer;
+}
 
-  @keyframes floatBox {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
+#skipBtn {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 3;
+  background: rgba(0,0,0,0.45);
+  color: #bfdbfe;
+  border: 1px solid rgba(147,197,253,0.35);
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
 
-  .brand {
-    text-align: center;
-    margin-bottom: 24px;
-  }
+/* CHECKOUT */
 
-  h1 {
-    font-size: 42px;
-    line-height: 0.95;
-    color: #38bdf8;
-    text-shadow: 0 0 12px #0284c7, 0 0 30px #38bdf8;
-    letter-spacing: 2px;
-    font-weight: 400;
-    margin: 10px 0 8px;
-  }
+.wrap {
+  max-width: 560px;
+  margin: auto;
+  position: relative;
+  z-index: 2;
+  padding: 22px;
+}
 
-  .mg {
-    color: #bfdbfe;
-    letter-spacing: 4px;
-    font-size: 14px;
-  }
+.card {
+  border-radius: 28px;
+  padding: 24px;
+  background: rgba(4, 8, 18, 0.78);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(56,189,248,0.42);
+  box-shadow:
+    0 0 45px rgba(56,189,248,0.22),
+    0 0 90px rgba(249,115,22,0.16);
+}
 
-  .tagline {
-    color: #fb923c;
-    font-size: 13px;
-    margin-top: 10px;
-    letter-spacing: 1px;
-  }
+.hero-box-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+  perspective: 900px;
+}
 
-  a {
-    color: #38bdf8;
-  }
+.hero-box {
+  width: 100%;
+  max-width: 440px;
+  border-radius: 20px;
+  filter:
+    drop-shadow(0 0 18px rgba(56,189,248,0.75))
+    drop-shadow(0 0 44px rgba(249,115,22,0.42));
+  animation: floatBox 5s ease-in-out infinite;
+  transition: transform 0.35s ease, filter 0.35s ease;
+}
 
-  h3 {
-    color: #bfdbfe;
-    margin-top: 24px;
-  }
+.hero-box:hover {
+  transform: rotateX(4deg) rotateY(-6deg) scale(1.03);
+  filter:
+    drop-shadow(0 0 30px rgba(56,189,248,1))
+    drop-shadow(0 0 65px rgba(249,115,22,0.7));
+}
 
-  .package {
-    width: 100%;
-    padding: 16px;
-    margin: 8px 0;
-    border-radius: 16px;
-    border: 1px solid rgba(56,189,248,0.55);
-    background: rgba(2,6,23,0.86);
-    color: #e0f2fe;
-    font-size: 16px;
-    box-shadow: inset 0 0 20px rgba(56,189,248,0.08);
-  }
+@keyframes floatBox {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
 
-  .package:hover {
-    background: rgba(12,74,110,0.5);
-  }
+.brand {
+  text-align: center;
+  margin-bottom: 24px;
+}
 
-  input {
-    width: 100%;
-    padding: 14px;
-    margin: 6px 0;
-    border-radius: 12px;
-    border: 1px solid rgba(147,197,253,0.38);
-    background: rgba(0,0,0,0.5);
-    color: white;
-    font-size: 15px;
-  }
+h1 {
+  font-size: 42px;
+  line-height: 0.95;
+  color: #38bdf8;
+  text-shadow: 0 0 12px #0284c7, 0 0 30px #38bdf8;
+  letter-spacing: 2px;
+  font-weight: 400;
+  margin: 10px 0 8px;
+}
 
-  .continue {
-    width: 100%;
-    padding: 16px;
-    margin-top: 12px;
-    border-radius: 16px;
-    border: none;
-    background: linear-gradient(90deg, #0284c7, #38bdf8);
-    color: #020617;
-    font-weight: bold;
-    font-size: 16px;
-    box-shadow: 0 0 26px rgba(56,189,248,0.48);
-  }
+.mg {
+  color: #bfdbfe;
+  letter-spacing: 4px;
+  font-size: 14px;
+}
 
-  .wallet {
-    display: block;
-    background: linear-gradient(90deg, #f97316, #38bdf8);
-    color: #020617;
-    padding: 15px;
-    border-radius: 16px;
-    text-align: center;
-    text-decoration: none;
-    font-weight: bold;
-    margin-top: 16px;
-  }
+.tagline {
+  color: #fb923c;
+  font-size: 13px;
+  margin-top: 10px;
+  letter-spacing: 1px;
+}
 
-  #qr {
-    width: 260px;
-    max-width: 100%;
-    background: white;
-    padding: 12px;
-    border-radius: 18px;
-    display: block;
-    margin: 22px auto;
-    box-shadow: 0 0 38px rgba(56,189,248,0.38);
-  }
+a { color: #38bdf8; }
 
-  #debug {
-    color: #fb923c;
-    white-space: pre-wrap;
-    font-size: 14px;
-  }
+h3 {
+  color: #bfdbfe;
+  margin-top: 24px;
+}
 
-  .disclaimer {
-    margin-top: 28px;
-    font-size: 11px;
-    line-height: 1.5;
-    color: rgba(219,234,254,0.72);
-    border-top: 1px solid rgba(255,255,255,0.14);
-    padding-top: 16px;
-  }
+.package {
+  width: 100%;
+  padding: 16px;
+  margin: 8px 0;
+  border-radius: 16px;
+  border: 1px solid rgba(56,189,248,0.55);
+  background: rgba(2,6,23,0.86);
+  color: #e0f2fe;
+  font-size: 16px;
+  box-shadow: inset 0 0 20px rgba(56,189,248,0.08);
+}
 
-  .spice {
-    text-align: center;
-    color: #38bdf8;
-    margin-top: 20px;
-    font-size: 13px;
-    letter-spacing: 1px;
-    text-shadow: 0 0 14px rgba(56,189,248,0.7);
-  }
+.package:hover {
+  background: rgba(12,74,110,0.5);
+}
+
+input {
+  width: 100%;
+  padding: 14px;
+  margin: 6px 0;
+  border-radius: 12px;
+  border: 1px solid rgba(147,197,253,0.38);
+  background: rgba(0,0,0,0.5);
+  color: white;
+  font-size: 15px;
+}
+
+.continue {
+  width: 100%;
+  padding: 16px;
+  margin-top: 12px;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+  color: #020617;
+  font-weight: bold;
+  font-size: 16px;
+  box-shadow: 0 0 26px rgba(56,189,248,0.48);
+}
+
+.wallet {
+  display: block;
+  background: linear-gradient(90deg, #f97316, #38bdf8);
+  color: #020617;
+  padding: 15px;
+  border-radius: 16px;
+  text-align: center;
+  text-decoration: none;
+  font-weight: bold;
+  margin-top: 16px;
+}
+
+#qr {
+  width: 260px;
+  max-width: 100%;
+  background: white;
+  padding: 12px;
+  border-radius: 18px;
+  display: block;
+  margin: 22px auto;
+  box-shadow: 0 0 38px rgba(56,189,248,0.38);
+}
+
+#debug {
+  color: #fb923c;
+  white-space: pre-wrap;
+  font-size: 14px;
+}
+
+.disclaimer {
+  margin-top: 28px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(219,234,254,0.72);
+  border-top: 1px solid rgba(255,255,255,0.14);
+  padding-top: 16px;
+}
+
+.spice {
+  text-align: center;
+  color: #38bdf8;
+  margin-top: 20px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 14px rgba(56,189,248,0.7);
+}
 </style>
 </head>
 
 <body>
-<div class="wrap">
+
+<div id="intro">
+  <video id="introVideo" autoplay muted playsinline>
+    <source src="/melatonin%20video%20short.mp4" type="video/mp4">
+  </video>
+
+  <button id="enterBtn" onclick="enterSite()">
+    Join the experiment to extend life
+  </button>
+
+  <button id="skipBtn" onclick="enterSite()">Skip</button>
+</div>
+
+<div class="wrap" id="shop">
   <div class="card">
 
     <div class="brand">
@@ -283,6 +356,22 @@
 </div>
 
 <script>
+const introVideo = document.getElementById("introVideo");
+const enterBtn = document.getElementById("enterBtn");
+
+introVideo.onended = function() {
+  enterBtn.style.display = "block";
+};
+
+setTimeout(function() {
+  enterBtn.style.display = "block";
+}, 9000);
+
+function enterSite() {
+  document.getElementById("intro").style.display = "none";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 let selectedPackage = null;
 const API_BASE = "https://txaidunu-github-io.vercel.app";
 
