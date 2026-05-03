@@ -5,46 +5,81 @@
 <title>Melatonin Melange</title>
 </head>
 
-<body style="background:#0b1020;color:white;font-family:sans-serif;padding:20px;">
+<body style="background:#0b1020;color:white;font-family:sans-serif;padding:20px;max-width:520px;margin:auto;">
 
 <h1>Melatonin Melange</h1>
 
-<a href="https://pump.science/experiments/MELATONIN?mint=QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug&exp=98ba4e07-5acb-4f70-ac14-d01919f22085&mode=trading" target="_blank">
+<p style="opacity:0.75;">
+Experimental checkout. US domestic shipping only.
+</p>
+
+<a href="https://pump.science/experiments/MELATONIN?mint=QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug&exp=98ba4e07-5acb-4f70-ac14-d01919f22085&mode=trading" target="_blank" style="color:#93c5fd;">
 View Experimental Data
 </a>
 
 <h3>Select Package</h3>
 
-<button onclick="selectPackage('one')">1 Lunar Cycle ($100)</button>
-<button onclick="selectPackage('two')">2 Lunar Cycles ($200)</button>
+<button onclick="selectPackage('one')" style="width:100%;padding:14px;margin:6px 0;border-radius:10px;">
+1 Lunar Cycle ($100)
+</button>
+
+<button onclick="selectPackage('two')" style="width:100%;padding:14px;margin:6px 0;border-radius:10px;">
+2 Lunar Cycles ($200)
+</button>
 
 <div id="form" style="display:none;margin-top:20px;">
   <h3>Shipping (US only)</h3>
-  <input id="name" placeholder="Full Name"><br>
-  <input id="address" placeholder="Address"><br>
-  <input id="city" placeholder="City"><br>
-  <input id="state" placeholder="State"><br>
-  <input id="zip" placeholder="ZIP"><br>
 
-  <button onclick="createOrder()">Continue to Payment</button>
+  <input id="name" placeholder="Full Name" style="width:100%;padding:12px;margin:5px 0;"><br>
+  <input id="address" placeholder="Street Address" style="width:100%;padding:12px;margin:5px 0;"><br>
+  <input id="city" placeholder="City" style="width:100%;padding:12px;margin:5px 0;"><br>
+  <input id="state" placeholder="State" maxlength="2" style="width:100%;padding:12px;margin:5px 0;"><br>
+  <input id="zip" placeholder="ZIP" style="width:100%;padding:12px;margin:5px 0;"><br>
+
+  <button onclick="createOrder()" style="width:100%;padding:16px;margin-top:12px;border-radius:10px;background:#7c3cff;color:white;border:none;font-weight:bold;">
+    Continue to Payment
+  </button>
 </div>
 
-<p id="debug" style="margin-top:20px;color:#facc15;"></p>
+<p id="debug" style="margin-top:20px;color:#facc15;white-space:pre-wrap;"></p>
 
 <div id="payment" style="display:none;">
   <h3 id="amount"></h3>
-  <a id="paylink" target="_blank">Open Wallet</a><br><br>
-  <img id="qr" style="width:250px;background:white;padding:10px;">
+
+  <a id="paylink" target="_blank" style="display:block;background:#22c55e;color:black;padding:14px;border-radius:10px;text-align:center;text-decoration:none;font-weight:bold;">
+    Open Wallet
+  </a>
+
+  <br>
+
+  <img id="qr" style="width:250px;background:white;padding:10px;border-radius:10px;">
+
   <p id="status">Waiting for payment...</p>
 </div>
 
 <script>
 let selectedPackage = null;
 
+const API_BASE = "https://txaidunu-github-io.vercel.app";
+
 function selectPackage(p) {
   selectedPackage = p;
   document.getElementById("form").style.display = "block";
   document.getElementById("debug").innerText = "Selected package: " + p;
+}
+
+function validUSShipping() {
+  const state = document.getElementById("state").value.trim().toUpperCase();
+  const zip = document.getElementById("zip").value.trim();
+
+  if (!document.getElementById("name").value.trim()) return "Enter full name.";
+  if (!document.getElementById("address").value.trim()) return "Enter street address.";
+  if (!document.getElementById("city").value.trim()) return "Enter city.";
+  if (!/^[A-Z]{2}$/.test(state)) return "Enter 2-letter US state code.";
+  if (!/^\d{5}(-\d{4})?$/.test(zip)) return "Enter valid US ZIP code.";
+
+  document.getElementById("state").value = state;
+  return null;
 }
 
 async function createOrder() {
@@ -58,17 +93,23 @@ async function createOrder() {
       return;
     }
 
-    const res = await fetch("https://txaidunu-github-io.vercel.app/api/create-order", {
+    const shippingError = validUSShipping();
+    if (shippingError) {
+      debug.innerText = "Shipping error: " + shippingError;
+      return;
+    }
+
+    const res = await fetch(API_BASE + "/api/create-order", {
       method: "POST",
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
         packageType: selectedPackage,
         address: {
-          name: document.getElementById("name").value,
-          address: document.getElementById("address").value,
-          city: document.getElementById("city").value,
-          state: document.getElementById("state").value,
-          zip: document.getElementById("zip").value
+          name: document.getElementById("name").value.trim(),
+          address: document.getElementById("address").value.trim(),
+          city: document.getElementById("city").value.trim(),
+          state: document.getElementById("state").value.trim().toUpperCase(),
+          zip: document.getElementById("zip").value.trim()
         }
       })
     });
@@ -79,16 +120,21 @@ async function createOrder() {
     try {
       data = JSON.parse(text);
     } catch {
-      debug.innerText = "Server returned non-JSON: " + text;
+      debug.innerText = "Server returned non-JSON:\n" + text;
       return;
     }
 
     if (!res.ok) {
-      debug.innerText = "Order error: " + JSON.stringify(data);
+      debug.innerText = "Order error:\n" + JSON.stringify(data, null, 2);
       return;
     }
 
-    debug.innerText = "Order created. Waiting for payment...";
+    debug.innerText =
+      "Order created.\n" +
+      "Supabase OK: " + data.supabaseOk + "\n" +
+      "Supabase Status: " + data.supabaseStatus + "\n" +
+      "Order ID: " + data.orderId + "\n" +
+      "Reference: " + data.reference;
 
     document.getElementById("amount").innerText = data.tokenAmount + " tokens";
     document.getElementById("paylink").href = data.payUrl;
@@ -109,14 +155,16 @@ async function createOrder() {
 function checkPayment(ref) {
   setInterval(async () => {
     try {
-      const r = await fetch("https://txaidunu-github-io.vercel.app/api/check-payment?reference=" + ref);
+      const r = await fetch(API_BASE + "/api/check-payment?reference=" + encodeURIComponent(ref));
       const d = await r.json();
 
       if (d.paid) {
-        document.getElementById("status").innerText = "Payment confirmed!";
+        document.getElementById("status").innerText =
+          "Payment confirmed! Signature: " + d.signature;
       }
     } catch (err) {
-      document.getElementById("status").innerText = "Payment check error: " + err.message;
+      document.getElementById("status").innerText =
+        "Payment check error: " + err.message;
     }
   }, 5000);
 }
