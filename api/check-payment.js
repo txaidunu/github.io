@@ -1,26 +1,31 @@
-import { Connection, PublicKey } from "@solana/web3.js";
+function checkPayment(ref) {
+  let attempts = 0;
+  const maxAttempts = 60;
 
-const connection = new Connection("https://api.mainnet-beta.solana.com");
+  const interval = setInterval(async () => {
+    attempts++;
 
-export default async function handler(req, res) {
-  const { reference } = req.query;
+    try {
+      const r = await fetch(API_BASE + "/api/check-payment?reference=" + encodeURIComponent(ref));
+      const d = await r.json();
 
-  try {
-    const sigs = await connection.getSignaturesForAddress(
-      new PublicKey(reference),
-      { limit: 1 }
-    );
+      if (d.paid) {
+        document.getElementById("status").innerText =
+          "Payment confirmed!";
+        clearInterval(interval);
+        return;
+      }
 
-    if (!sigs.length) {
-      return res.json({ paid: false });
+      document.getElementById("status").innerText =
+        "Waiting for payment...";
+
+      if (attempts >= maxAttempts) {
+        clearInterval(interval);
+      }
+
+    } catch {
+      document.getElementById("status").innerText =
+        "Checking network...";
     }
-
-    return res.json({
-      paid: true,
-      signature: sigs[0].signature
-    });
-
-  } catch (e) {
-    return res.json({ paid: false });
-  }
+  }, 10000); // every 10 seconds (not 5)
 }
