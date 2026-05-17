@@ -9,7 +9,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const WALLET_ADDRESS = 'H115kTVj5QsT58w6Xg9hviyoALWqVZ1DLTvhVDeQ66w4';
 
 const TELEGRAM_BOT_TOKEN = '8405157983:AAEUGnnvnrPMNq6pnfvmIFpXfyxgwGvqY_M';
-const TELEGRAM_CHAT_ID = '@Birdgod23';
+const TELEGRAM_CHAT_ID = '@1519466250';
 
 // Send a Telegram message to you
 async function sendTelegram(message) {
