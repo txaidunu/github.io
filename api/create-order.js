@@ -104,7 +104,7 @@ module.exports = async function handler(req, res) {
         state: address.state,
         zip: address.zip,
         status: 'pending',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString().replace('T', ' ').replace('Z', '')
       }]);
 
     if (supabaseError) {
