@@ -109,6 +109,11 @@ module.exports = async function handler(req, res) {
 
     if (supabaseError) {
       console.error('Supabase error:', supabaseError);
+      return res.status(500).json({ 
+        error: 'Supabase failed: ' + supabaseError.message,
+        details: supabaseError
+      });
+    }
     }
 
     return res.status(200).json({
