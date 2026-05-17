@@ -1,6 +1,6 @@
 // api/check-payment.js
-// This runs on Vercel and checks if a Solana payment has arrived
-// When payment is confirmed, it sends you a Telegram message
+// Checks Solana blockchain for payment confirmation
+// Sends Telegram notification when payment is detected
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -9,31 +9,32 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const WALLET_ADDRESS = 'H115kTVj5QsT58w6Xg9hviyoALWqVZ1DLTvhVDeQ66w4';
 
 const TELEGRAM_BOT_TOKEN = '8405157983:AAEUGnnvnrPMNq6pnfvmIFpXfyxgwGvqY_M';
-const TELEGRAM_CHAT_ID = '@Birdgod23'; // Your Telegram handle
+const TELEGRAM_CHAT_ID = '@Birdgod23';
 
-// Send a message to your Telegram
+// Send a Telegram message to you
 async function sendTelegram(message) {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
-      text: message,
-      parse_mode: 'HTML'
-    })
-  });
-  const data = await response.json();
-  if (!data.ok) {
-    console.error('Telegram error:', data);
+  try {
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: 'HTML'
+      })
+    });
+    const data = await response.json();
+    if (!data.ok) console.error('Telegram error:', data);
+    return data;
+  } catch (err) {
+    console.error('Telegram send failed:', err);
   }
-  return data;
 }
 
-// Check Solana blockchain for a transaction matching this order reference
+// Check Solana blockchain for a transaction matching our order reference
 async function checkSolanaPayment(reference) {
   try {
-    // Query the Solana RPC for transactions on your wallet
     const response = await fetch('https://api.mainnet-beta.solana.com', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -51,7 +52,7 @@ async function checkSolanaPayment(reference) {
     const data = await response.json();
     const signatures = data.result || [];
 
-    // Look through recent transactions for one with our reference in the memo
+    // Look for a transaction that has our order reference in the memo field
     for (const sig of signatures) {
       if (sig.memo && sig.memo.includes(reference)) {
         return { paid: true, signature: sig.signature };
@@ -60,24 +61,18 @@ async function checkSolanaPayment(reference) {
 
     return { paid: false };
   } catch (err) {
-    console.error('Solana check error:', err);
+    console.error('Solana RPC error:', err);
     return { paid: false, error: err.message };
   }
 }
 
 module.exports = async function handler(req, res) {
-  // Allow requests from your website
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const { reference } = req.query;
@@ -88,8 +83,7 @@ module.exports = async function handler(req, res) {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // First check if we already marked this order as paid in Supabase
-    // (avoids sending duplicate Telegram messages)
+    // Check if we already confirmed this order — avoids duplicate Telegram messages
     const { data: existingOrder } = await supabase
       .from('orders')
       .select('*')
@@ -100,11 +94,11 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ paid: true, alreadyConfirmed: true });
     }
 
-    // Check Solana blockchain for payment
+    // Check the Solana blockchain for payment
     const payment = await checkSolanaPayment(reference);
 
     if (payment.paid) {
-      // Mark order as paid in Supabase
+      // Mark as paid in Supabase
       await supabase
         .from('orders')
         .update({
@@ -114,16 +108,25 @@ module.exports = async function handler(req, res) {
         })
         .eq('reference', reference);
 
-      // Send Telegram notification to you
+      // Send Telegram notification to you with full order details
       if (existingOrder) {
+        const packageLabel = existingOrder.package_type === 'one'
+          ? '1 Lunar Cycle — $100'
+          : '2 Lunar Cycles — $200';
+
+        const tokenInfo = existingOrder.payment_token
+          ? `${existingOrder.token_amount} ${existingOrder.payment_token}`
+          : existingOrder.token_amount + ' SOL';
+
         const message =
           `🚀 <b>NEW PAID ORDER!</b>\n\n` +
-          `📦 Package: ${existingOrder.package_type === 'one' ? '1 Lunar Cycle — $100' : '2 Lunar Cycles — $200'}\n` +
-          `👤 Name: ${existingOrder.customer_name}\n` +
-          `📍 Address: ${existingOrder.street}\n` +
-          `🏙️ City: ${existingOrder.city}, ${existingOrder.state} ${existingOrder.zip}\n` +
-          `🔑 Order ID: ${reference}\n` +
-          `✅ Payment confirmed on Solana!`;
+          `📦 <b>Package:</b> ${packageLabel}\n` +
+          `💰 <b>Paid:</b> ${tokenInfo}\n` +
+          `👤 <b>Name:</b> ${existingOrder.customer_name}\n` +
+          `📍 <b>Address:</b> ${existingOrder.street}\n` +
+          `🏙️ <b>City:</b> ${existingOrder.city}, ${existingOrder.state} ${existingOrder.zip}\n` +
+          `🔑 <b>Order ID:</b> ${reference}\n` +
+          `✅ <b>Payment confirmed on Solana!</b>`;
 
         await sendTelegram(message);
       }
@@ -131,7 +134,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ paid: true, signature: payment.signature });
     }
 
-    // Not paid yet
+    // Payment not found yet — customer's browser will keep checking every 10 seconds
     return res.status(200).json({ paid: false });
 
   } catch (err) {
