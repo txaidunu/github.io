@@ -1,131 +1,98 @@
-import { randomBytes, randomUUID } from "crypto";
+// api/create-order.js
+// This runs on Vercel when a customer submits their order
 
-const BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const { createClient } = require('@supabase/supabase-js');
 
-function base58Encode(buffer) {
-  let digits = [0];
+const SUPABASE_URL = 'https://aeqhjftkaikfquafwwdm.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlcWhqZnRrYWlrZnF1YWZ3d2RtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1ODMzMjMsImV4cCI6MjA5MzE1OTMyM30.jKE8LX8-uuYCWiJ6WaeAjXFU0FcWK1n7Q9X6axBId98';
+const WALLET_ADDRESS = 'H115kTVj5QsT58w6Xg9hviyoALWqVZ1DLTvhVDeQ66w4';
 
-  for (const byte of buffer) {
-    let carry = byte;
-    for (let j = 0; j < digits.length; j++) {
-      carry += digits[j] << 8;
-      digits[j] = carry % 58;
-      carry = Math.floor(carry / 58);
-    }
-    while (carry) {
-      digits.push(carry % 58);
-      carry = Math.floor(carry / 58);
-    }
-  }
+const PRICES = {
+  one: 100,   // $100 = 1 Lunar Cycle
+  two: 200    // $200 = 2 Lunar Cycles
+};
 
-  for (const byte of buffer) {
-    if (byte === 0) digits.push(0);
-    else break;
-  }
-
-  return digits.reverse().map(d => BASE58[d]).join("");
-}
-
+// Generate a unique reference ID for this order
 function generateReference() {
-  return base58Encode(randomBytes(32));
+  return 'order_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+  // Allow requests from your website
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    if (!process.env.SUPABASE_URL) {
-      return res.status(500).json({ error: "Missing SUPABASE_URL" });
+    const { packageType, address } = req.body;
+
+    // Validate inputs
+    if (!packageType || !PRICES[packageType]) {
+      return res.status(400).json({ error: 'Invalid package type' });
+    }
+    if (!address || !address.name || !address.address || !address.city || !address.state || !address.zip) {
+      return res.status(400).json({ error: 'Missing shipping info' });
     }
 
-    if (!process.env.SUPABASE_KEY) {
-      return res.status(500).json({ error: "Missing SUPABASE_KEY" });
-    }
-
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Method not allowed" });
-    }
-
-    const { packageType, address } = req.body || {};
-
-    const prices = {
-      one: 100,
-      two: 200
-    };
-
-    const usdPrice = prices[packageType];
-
-    if (!usdPrice) {
-      return res.status(400).json({ error: "Invalid package" });
-    }
-
+    const usdAmount = PRICES[packageType];
     const reference = generateReference();
 
-    const priceResponse = await fetch(
-      "https://api.dexscreener.com/latest/dex/tokens/QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug"
-    );
-
-    const priceData = await priceResponse.json();
-    const tokenUsdPrice = parseFloat(priceData.pairs?.[0]?.priceUsd || 0);
-
-    if (!tokenUsdPrice) {
-      return res.status(500).json({ error: "Price unavailable" });
-    }
-
-    const tokenAmount = (usdPrice / tokenUsdPrice).toFixed(6);
-    const orderId = randomUUID();
-
-    const supabaseRes = await fetch(process.env.SUPABASE_URL + "/rest/v1/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": process.env.SUPABASE_KEY,
-        "Authorization": "Bearer " + process.env.SUPABASE_KEY
-      },
-      body: JSON.stringify({
-        id: orderId,
+    // Save order to Supabase
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { error: supabaseError } = await supabase
+      .from('orders')
+      .insert([{
+        reference,
         package_type: packageType,
-        usd_price: usdPrice,
-        token_amount: tokenAmount,
-        name: address?.name || "",
-        address: address?.address || "",
-        city: address?.city || "",
-        state: address?.state || "",
-        zip: address?.zip || "",
-        reference: reference,
-        status: "PENDING"
-      })
-    });
+        usd_amount: usdAmount,
+        customer_name: address.name,
+        street: address.address,
+        city: address.city,
+        state: address.state,
+        zip: address.zip,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      }]);
 
-    if (!supabaseRes.ok) {
-      const details = await supabaseRes.text();
-      return res.status(500).json({
-        error: "Supabase insert failed",
-        supabaseOk: false,
-        supabaseStatus: supabaseRes.status,
-        details
-      });
+    if (supabaseError) {
+      console.error('Supabase error:', supabaseError);
+      // Continue even if Supabase fails — don't block the customer
     }
 
-    const payUrl =
-      "solana:H115kTVj5QsT58w6Xg9hviyoALWqVZ1DLTvhVDeQ66w4" +
-      "?amount=" + encodeURIComponent(tokenAmount) +
-      "&spl-token=" + encodeURIComponent("QWYpq3zoqkEMywgAVJggtXqXHkhT5HCcFEPpoK5drug") +
-      "&reference=" + encodeURIComponent(reference) +
-      "&label=" + encodeURIComponent("Melatonin Melange") +
-      "&message=" + encodeURIComponent("Order " + orderId);
+    // Build Solana Pay URL
+    // This opens the customer's wallet app with the payment pre-filled
+    const label = encodeURIComponent('Melatonin Melange');
+    const memo = encodeURIComponent(reference);
+    const message = encodeURIComponent(packageType === 'one' ? '1 Lunar Cycle' : '2 Lunar Cycles');
+
+    // We use SOL amount — approximately $100 or $200 worth
+    // For now using a fixed SOL amount; you can integrate a price oracle later
+    const solAmount = packageType === 'one' ? '0.5' : '1.0'; // Update these as SOL price changes
+
+    const payUrl = `solana:${WALLET_ADDRESS}?amount=${solAmount}&label=${label}&message=${message}&memo=${memo}`;
 
     return res.status(200).json({
-      orderId,
+      success: true,
       reference,
-      tokenAmount,
+      orderId: reference,
+      usdAmount,
+      tokenAmount: solAmount + ' SOL',
       payUrl,
-      supabaseOk: true,
-      supabaseStatus: supabaseRes.status
+      supabaseOk: !supabaseError,
+      supabaseStatus: supabaseError ? supabaseError.message : 'saved'
     });
 
-  } catch (e) {
-    return res.status(500).json({
-      error: "Server error",
-      details: e.message
-    });
+  } catch (err) {
+    console.error('Create order error:', err);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
   }
-}
+};
